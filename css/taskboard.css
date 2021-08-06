@@ -28,9 +28,29 @@ body {
     padding: 5px 10px;
 }
 
+.panel-heading.light {
+    background-color: #ffffff;
+    border-color: #ddd;
+}
+
+.panel-heading.dark {
+    background-color: #d4d4d4;
+    border-color: #d4d4d4;
+}
+
 .panel-body {
     padding: 10px;
     word-wrap: break-word;
+}
+
+.panel-body.light {
+    background-color: #ffffff;
+    border-color: #ddd;
+}
+
+.panel-body.dark {
+    background-color: #d4d4d4;
+    border-color: #d4d4d4;
 }
 
 #filterbar {
