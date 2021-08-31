@@ -168,8 +168,12 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                             $scope.dragged = false;
                         }
 
+                        if ($scope.config.USE_ORDINALS) {
+                            saveOrdinals(ui.item.sortable.sourceModel);
+                        }
+
                         // ensure the task is not moving into same folder
-                        if (taskitem.Parent.Name != tasksfolder.Name) {
+                        if (taskitem.Parent.Name != tasksfolder.Name && !$scope.config.INCLUDE_TODOS) {
                             // move the task item
                             taskitem = taskitem.Move(tasksfolder);
                             itemChanged = true;
@@ -195,6 +199,18 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
         });
     };
 
+    // Aligns the Ordinal property of all tasks in a list according to the order of that list
+    // https://docs.microsoft.com/en-us/office/vba/api/outlook.taskitem.ordinal
+    var saveOrdinals = function (tasks) {
+        tasks.forEach(function(item, i, _) {
+            if (item.ordinal != i) {
+                var taskitem = outlookNS.GetItemFromID(item.entryID);
+                taskitem.Ordinal = i;
+                taskitem.Save();
+            }
+        });
+    }
+
     var getOutlookFolder = function (folderpath) {
         if (!$scope.config.INCLUDE_TODOS) {
             if (folderpath === undefined || folderpath === '') {
@@ -211,7 +227,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                 }
             }
         } else {
-            // Tasks folder
+            // To-do list folder
             var folder = outlookNS.GetDefaultFolder(28);
         }
         return folder;
@@ -273,6 +289,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                             entryID: task.EntryID,
                             subject: task.Subject,
                             priority: task.Importance,
+                            ordinal: task.Ordinal,
                             startdate: new Date(task.StartDate),
                             duedate: new Date(task.DueDate),
                             completeddate: new Date(task.DateCompleted),
@@ -296,12 +313,13 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
 
                 // Mail object (flagged mail)
                 case 43:
-                    var flaggedMailStatus = $scope.config.INCLUDE_TODOS_STATUS; // TO DO: make this configurable
+                    var flaggedMailStatus = $scope.config.INCLUDE_TODOS_STATUS;
                     if (folderStatus == flaggedMailStatus) {
                         taskArray.push({
                             entryID: task.EntryID,
                             subject: task.TaskSubject,
                             priority: task.Importance,
+                            ordinal: task.Ordinal,
                             startdate: new Date(task.TaskStartDate),
                             duedate: new Date(task.TaskDueDate),
                             completeddate: new Date(task.TaskCompletedDate),
@@ -332,7 +350,8 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
 
         // sort tasks
         var sortKeys;
-        if (sort === undefined) { sortKeys = ["-priority"]; }
+        if ($scope.config.USE_ORDINALS) { sortKeys = ["ordinal"] }
+        else if (sort === undefined) { sortKeys = ["-priority"]; }
         else { sortKeys = sort.split(","); }
 
         var sortedTasks = taskArray.sort(fieldSorter(sortKeys));
@@ -762,6 +781,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
         mailBody += "<tr><td>SAVE_STATE</td><td>if true, then the filters will be saved and re-used when the app is restarted</td></tr>";
         mailBody += "<tr><td>FILTER_REPORTS</td><td>if true, then the filters will be applied on status reports, too</td></tr>";
         mailBody += "<tr><td>PRIVACY_FILTER</td><td>if true, then you can use separate boards for private and publis tasks</td></tr>";
+        mailBody += "<tr><td>USE_ORDINALS</td><td>if true, then you can drag and drop issues i a column to sort them. This will override the sorting settings for all columns.<td></tr>";
         mailBody += "<tr><td>INCLUDE_TODOS</td><td>Search the To Do folder instead of the Tasks folder. This includes flagged mails. Note that flagged mails cannot be moved across lanes as they do not have statuses.</td></tr>";
         mailBody += "<tr><td>INCLUDE_TODOS_STATUS</td><td>Choose which status ID should be assigned to tasks generated from flagged mails. These cannot be moved across lanes.</td></tr>";
         mailBody += "<tr><td>EXCERPT_PARSE</td><td>If true, line breaks and checkboxes from the task body are parsed and displayed in the task excerpt. Other HTML content in the excerpt is displayed as well. This introduces a <b>potential vulnerability</b> to XSS attacks! However, this is probably not that relevant with personal Outlook tasks.</td></tr>";
@@ -1180,7 +1200,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                 "NAME": "",
                 "TITLE": "BACKLOG",
                 "SORT": "-priority,duedate,categoryNames,subject",
-                "RESTRICT": "",
+                "RESTRICT": "[Complete] = false",
                 "DISPLAY_PROPERTIES": {
                     "OWNER": false,
                     "PERCENT": false,
@@ -1197,7 +1217,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                 "TITLE": "NEXT",
                 "LIMIT": 20,
                 "SORT": "-priority,duedate,categoryNames,subject",
-                "RESTRICT": "",
+                "RESTRICT": "[Complete] = false",
                 "DISPLAY_PROPERTIES": {
                     "OWNER": false,
                     "PERCENT": false,
@@ -1213,7 +1233,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                 "TITLE": "IN PROGRESS",
                 "LIMIT": 5,
                 "SORT": "-priority,duedate,categoryNames,subject",
-                "RESTRICT": "",
+                "RESTRICT": "[Complete] = false",
                 "DISPLAY_PROPERTIES": {
                     "OWNER": false,
                     "PERCENT": false,
@@ -1229,7 +1249,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                 "TITLE": "WAITING",
                 "LIMIT": 0,
                 "SORT": "-priority,duedate,categoryNames,subject",
-                "RESTRICT": "",
+                "RESTRICT": "[Complete] = false",
                 "DISPLAY_PROPERTIES": {
                     "OWNER": false,
                     "PERCENT": false,
@@ -1268,6 +1288,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
             "SAVE_STATE": true,
             "FILTER_REPORTS": true,
             "PRIVACY_FILTER": true,
+            "USE_ORDINALS": false,
             "INCLUDE_TODOS": false,
             "INCLUDE_TODOS_STATUS": 0,
             "EXCERPT_PARSE": true,
