@@ -167,8 +167,12 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                             $scope.dragged = false;
                         }
 
+                        if ($scope.config.INCLUDE_TODOS) {
+                            saveOrdinals(ui.item.sortable.sourceModel);
+                        }
+
                         // ensure the task is not moving into same folder
-                        if (taskitem.Parent.Name != tasksfolder.Name) {
+                        if (taskitem.Parent.Name != tasksfolder.Name && !$scope.config.INCLUDE_TODOS) {
                             // move the task item
                             taskitem = taskitem.Move(tasksfolder);
                             itemChanged = true;
@@ -179,7 +183,8 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                         }
 
                         if (itemChanged) {
-                            $scope.initTasks();
+                            // TODO Figure out if this is necessary? Seems to work fine (and much faster) without...
+                            // $scope.initTasks();
                         }
                     }
                 }
@@ -193,6 +198,15 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
             $scope.saveState();
         });
     };
+
+    // Aligns the Ordinal property of all tasks in a list according to the order of that list
+    // https://docs.microsoft.com/en-us/office/vba/api/outlook.taskitem.ordinal
+    var saveOrdinals = function (tasks) {
+        tasks.forEach(function(item, i, _) {
+            var taskitem = outlookNS.GetItemFromID(item.entryID);
+            taskitem.Ordinal = i;
+        });
+    }
 
     var getOutlookFolder = function (folderpath) {
         if (!$scope.config.INCLUDE_TODOS) {
@@ -210,7 +224,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                 }
             }
         } else {
-            // Tasks folder
+            // To-do list folder
             var folder = outlookNS.GetDefaultFolder(28);
         }
         return folder;
@@ -272,6 +286,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                             entryID: task.EntryID,
                             subject: task.Subject,
                             priority: task.Importance,
+                            ordinal: task.Ordinal,
                             startdate: new Date(task.StartDate),
                             duedate: new Date(task.DueDate),
                             completeddate: new Date(task.DateCompleted),
@@ -301,6 +316,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                             entryID: task.EntryID,
                             subject: task.TaskSubject,
                             priority: task.Importance,
+                            ordinal: task.Ordinal,
                             startdate: new Date(task.TaskStartDate),
                             duedate: new Date(task.TaskDueDate),
                             completeddate: new Date(task.TaskCompletedDate),
@@ -332,6 +348,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
         // sort tasks
         var sortKeys;
         if (sort === undefined) { sortKeys = ["-priority"]; }
+        else if ($scope.config.INCLUDE_TODOS) { sortKeys = ["ordinal"] }
         else { sortKeys = sort.split(","); }
 
         var sortedTasks = taskArray.sort(fieldSorter(sortKeys));
