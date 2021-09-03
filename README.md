@@ -8,7 +8,7 @@ There are 2 ways to use the taskboard:
 
   1. As an Outlook folder Home Page
   2. Directly from Internet Explorer
-  
+
 ![Outlook Taskboard](http://evrenvarol.github.io/outlook-taskboard/img/outlook-taskboard.png)
 
 # Features
@@ -46,7 +46,7 @@ To add a checkbox, add a `[]/[ ]` or `[x]/[X]` for an unchecked or a checked box
 
 When checking or unchecking a box, the task's description will be updated accordingly.
 
-### Supported platforms 
+### Supported platforms
 Tested with Outlook 2013 and 2016 running on Windows 7/8.1/10.
 
 The taskboard can also be opened in Internet Explorer. Due to limitations with ActiveX controls, only Internet Explorer 9/10 and 11 are supported.
@@ -103,7 +103,7 @@ The further setup depends on how you want to use the taskboard. While the soluti
   ![IE Local Intranet Zone Setting](http://evrenvarol.github.io/outlook-taskboard/img/ie-localintranet-activexscript-enable.png)
 
   * Open the page **kanban.html** in Internet Explorer.
-  
+
     *Pro tip: Set kanban.html as your Internet Explorer homepage. (What else are you going to use IE for anyway...)*
 
     Note that any other browsers than Internet Explorer are __not supported__ (not even Edge), as IE's ActiveX features are required for access to Outlook data.
@@ -117,7 +117,7 @@ This is an example for the configuration of the "Next" lane:
 ```javascript
 ...
   "NEXT_FOLDER": {
-    "ACTIVE": true, 
+    "ACTIVE": true,
     "NAME": "",
     "TITLE": "NEXT",
     "LIMIT": 20,
@@ -125,7 +125,7 @@ This is an example for the configuration of the "Next" lane:
     "RESTRICT": "",
     "DISPLAY_PROPERTIES": {
       "OWNER": false,
-      "PERCENT": true, 
+      "PERCENT": true,
       "TOTALWORK": true
     },
 ...
@@ -154,6 +154,8 @@ This is an example for the configuration of the "Next" lane:
 * The `Sort` value can be updated to change the sorting criteria and their order.
 
 * It is also possible to add multiple order criteria such as: `"SORT": "-priority,duedate,startdate,categoryNames",`
+
+* Another possibility is to sort tasks manually by drag and drop. To enable this, set `"USE_ORDINALS": true,`. This will override the sorting criteria for the individual columns.
 
 ### Task Template
 
