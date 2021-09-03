@@ -1030,6 +1030,13 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                 var newstatus = $scope.config.STATUS.WAITING.VALUE;
                 break;
         };
+
+        if ($scope.config.INCLUDE_TODOS) {
+            // Cannot create items in To-Do List directly. Create them in Tasks instead.
+            // They will appear in To-Do List as well.
+            tasksfolder = outlookNS.GetDefaultFolder(13);
+        }
+
         // create a new task item object in outlook
         var taskitem = tasksfolder.Items.Add();
 
