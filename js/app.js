@@ -205,7 +205,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
         tasks.forEach(function(item, i, _) {
             if (item.ordinal != i) {
                 var taskitem = outlookNS.GetItemFromID(item.entryID);
-                taskitem.Ordinal = i;
+                taskitem.ToDoTaskOrdinal = i;
                 taskitem.Save();
             }
         });
@@ -289,7 +289,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                             entryID: task.EntryID,
                             subject: task.Subject,
                             priority: task.Importance,
-                            ordinal: task.Ordinal,
+                            ordinal: task.ToDoTaskOrdinal,
                             startdate: new Date(task.StartDate),
                             duedate: new Date(task.DueDate),
                             completeddate: new Date(task.DateCompleted),
@@ -319,7 +319,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                             entryID: task.EntryID,
                             subject: task.TaskSubject,
                             priority: task.Importance,
-                            ordinal: task.Ordinal,
+                            ordinal: task.ToDoTaskOrdinal,
                             startdate: new Date(task.TaskStartDate),
                             duedate: new Date(task.TaskDueDate),
                             completeddate: new Date(task.TaskCompletedDate),
