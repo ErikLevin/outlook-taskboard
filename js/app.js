@@ -157,8 +157,8 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                         var taskitem = outlookNS.GetItemFromID(ui.item.sortable.model.entryID);
                         var itemChanged = false;
 
-                        // set new status, if different
-                        if (taskitem.Status != newstatus) {
+                        // set new status, if different and if it's a task item (not mail)
+                        if (taskitem.Status != newstatus && taskitem.Class == 48) {
                             $scope.dragged = true;
                             taskitem.Status = newstatus;
                             taskitem.Save();
