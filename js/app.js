@@ -64,6 +64,14 @@ function checkItem(checkBox, taskID, checkIdx) {
     taskItem.save();
 }
 
+// https://docs.microsoft.com/en-us/office/vba/api/outlook.olobjectclass
+const OL_MAIL_ITEM = 43;
+const OL_TASK_ITEM = 48;
+
+ // https://docs.microsoft.com/en-us/office/vba/api/outlook.olmarkinterval
+const OL_MARK_COMPLETE = 5;
+const OL_MARK_TODAY = 0;
+
 tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
 
     // DeepDiff.observableDiff(def, curr, function(d) {
@@ -157,14 +165,29 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                         var taskitem = outlookNS.GetItemFromID(ui.item.sortable.model.entryID);
                         var itemChanged = false;
 
-                        // set new status, if different and if it's a task item (not mail)
-                        if (taskitem.Status != newstatus && taskitem.Class == 48) {
+                        // set new status, if different
+                        if (
+                            (taskitem.Class == OL_TASK_ITEM && taskitem.Status != newstatus) ||
+                            taskitem.Class == OL_MAIL_ITEM && taskitem.FlagRequest != taskStatus(newstatus)
+                        ) {
                             $scope.dragged = true;
-                            taskitem.Status = newstatus;
+                            if (taskitem.Class == OL_TASK_ITEM) {
+                                taskitem.Status = newstatus;
+                            }
+                            else {
+                                if (newstatus == $scope.config.STATUS.COMPLETE.VALUE) {
+                                    taskitem.MarkAsTask(OL_MARK_COMPLETE);
+                                }
+                                // Changed from complete to uncomplete
+                                else if ( taskitem.FlagRequest == taskStatus($scope.config.STATUS.COMPLETE.VALUE) ) {
+                                    taskitem.MarkAsTask(OL_MARK_TODAY);
+                                }
+                                taskitem.FlagRequest = taskStatus(newstatus);
+                            }
                             taskitem.Save();
                             itemChanged = true;
                             ui.item.sortable.model.status = taskStatus(newstatus);
-                            ui.item.sortable.model.completeddate = new Date(taskitem.DateCompleted)
+                            ui.item.sortable.model.completeddate = new Date(taskitem.DateCompleted);
                             $scope.dragged = false;
                         }
 
@@ -283,7 +306,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
 
             switch (task.Class) {
                 // Task object
-                case 48:
+                case OL_TASK_ITEM:
                     if (task.Status == folderStatus) {
                         taskArray.push({
                             entryID: task.EntryID,
@@ -312,9 +335,11 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                     break;
 
                 // Mail object (flagged mail)
-                case 43:
-                    var flaggedMailStatus = $scope.config.INCLUDE_TODOS_STATUS;
-                    if (folderStatus == flaggedMailStatus) {
+                case OL_MAIL_ITEM:
+                    if (task.FlagRequest == "Follow up") { // Initial FlagRequest value set by Outlook
+                        task.FlagRequest = taskStatus($scope.config.INITIAL_MAIL_STATUS);
+                    }
+                    if (task.FlagRequest == taskStatus(folderStatus)) {
                         taskArray.push({
                             entryID: task.EntryID,
                             subject: task.TaskSubject,
@@ -328,7 +353,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                             categoryNames: task.Categories,
                             notes: taskExcerpt(task.Body, $scope.config.TASKNOTE_EXCERPT, task.EntryID),
                             body: task.Body,
-                            status: taskStatus(flaggedMailStatus),
+                            status: taskStatus(task.FlagRequest),
                             oneNoteTaskID: getUserProp(task, "OneNoteTaskID"),
                             oneNoteURL: getUserProp(task, "OneNoteURL"),
                             percent: 0,
@@ -783,7 +808,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
         mailBody += "<tr><td>PRIVACY_FILTER</td><td>if true, then you can use separate boards for private and publis tasks</td></tr>";
         mailBody += "<tr><td>USE_ORDINALS</td><td>if true, then you can drag and drop issues i a column to sort them. This will override the sorting settings for all columns.<td></tr>";
         mailBody += "<tr><td>INCLUDE_TODOS</td><td>Search the To Do folder instead of the Tasks folder. This includes flagged mails. Note that flagged mails cannot be moved across lanes as they do not have statuses.</td></tr>";
-        mailBody += "<tr><td>INCLUDE_TODOS_STATUS</td><td>Choose which status ID should be assigned to tasks generated from flagged mails. These cannot be moved across lanes.</td></tr>";
+        mailBody += "<tr><td>INITIAL_MAIL_STATUS</td><td>Choose which status ID should initially be assigned to tasks generated from flagged mails.</td></tr>";
         mailBody += "<tr><td>EXCERPT_PARSE</td><td>If true, line breaks and checkboxes from the task body are parsed and displayed in the task excerpt. Other HTML content in the excerpt is displayed as well. This introduces a <b>potential vulnerability</b> to XSS attacks! However, this is probably not that relevant with personal Outlook tasks.</td></tr>";
         mailBody += "<tr><td>STATUS</td><td>The values and descriptions for the task statuses. The text can be changed for the status report</td></tr>";
         mailBody += "<tr><td>COMPLETED</td><td>Define what to do with completed tasks after x days: NONE, HIDE, ARCHIVE or DELETE</td></tr>";
@@ -1297,7 +1322,7 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
             "PRIVACY_FILTER": true,
             "USE_ORDINALS": false,
             "INCLUDE_TODOS": false,
-            "INCLUDE_TODOS_STATUS": 0,
+            "INITIAL_MAIL_STATUS": 0,
             "EXCERPT_PARSE": true,
             "STATUS": {
                 "NOT_STARTED": {
