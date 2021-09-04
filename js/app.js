@@ -157,8 +157,8 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                         var taskitem = outlookNS.GetItemFromID(ui.item.sortable.model.entryID);
                         var itemChanged = false;
 
-                        // set new status, if different
-                        if (taskitem.Status != newstatus) {
+                        // set new status, if different and if it's a task item (not mail)
+                        if (taskitem.Status != newstatus && taskitem.Class == 48) {
                             $scope.dragged = true;
                             taskitem.Status = newstatus;
                             taskitem.Save();
@@ -1030,6 +1030,13 @@ tbApp.controller('taskboardController', function ($scope, $filter, $sce) {
                 var newstatus = $scope.config.STATUS.WAITING.VALUE;
                 break;
         };
+
+        if ($scope.config.INCLUDE_TODOS) {
+            // Cannot create items in To-Do List directly. Create them in Tasks instead.
+            // They will appear in To-Do List as well.
+            tasksfolder = outlookNS.GetDefaultFolder(13);
+        }
+
         // create a new task item object in outlook
         var taskitem = tasksfolder.Items.Add();
 
